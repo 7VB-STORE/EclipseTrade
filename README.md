@@ -62,7 +62,7 @@
 
 3. **Клонируйте репозиторий:**
 ```bash
-git clone https://github.com/7VB-STORE/EclipsTrade.git
+git clone https://github.com/7VB-STORE/EclipseTrade.git
 cd EclipsTrade
 ```
 
