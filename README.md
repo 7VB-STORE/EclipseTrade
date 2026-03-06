@@ -6,6 +6,8 @@
 ![Node.js](https://img.shields.io/badge/node-%3E%3D16.0.0-green.svg)
 ![Electron](https://img.shields.io/badge/electron-latest-blue.svg)
 
+<a href='https://postimg.cc/mPFYSdDJ' target='_blank'><img src='https://i.postimg.cc/13vvs2Zm/Eclipse-Trade.jpg' border='0' alt='Eclipse-Trade'></a>
+
 ## ✨ Возможности
 
 ### 🔹 Управление аккаунтами
