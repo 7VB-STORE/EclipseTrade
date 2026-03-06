@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EclipseTradeBot</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <img src="logo/logo.png" alt="EclipseTradeBot" class="logo-img">
+                <h1 class="title">EclipseTradeBot</h1>
+            </div>
+            <div class="header-right">
+                <a href="https://t.me/POGGYO" target="_blank" class="social-link">
+                    <img src="logo/poggi.png" alt="POGGI" class="social-icon" title="POGGI Telegram">
+                </a>
+                <a href="https://t.me/EclipseFarm" target="_blank" class="social-link">
+                    <img src="logo/icons8-телеграм-100.png" alt="Telegram" class="social-icon" title="Telegram">
+                </a>
+                <a href="https://discord.gg/8PpndMpr" target="_blank" class="social-link">
+                    <img src="logo/icons8-discord-100.png" alt="Discord" class="social-icon" title="Discord">
+                </a>
+                <a href="https://github.com/7VB-STORE" target="_blank" class="social-link">
+                    <img src="logo/icons8-github-100.png" alt="GitHub" class="social-icon" title="GitHub">
+                </a>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Left Panel - Accounts -->
+            <div class="panel accounts-panel">
+                <div class="accounts-header">
+                    <h2 class="panel-title">Аккаунты</h2>
+                </div>
+                <div class="accounts-buttons">
+                    <button class="btn btn-get-2fa" id="get2FABtn" title="Получить 2FA код">🔐</button>
+                    <button class="btn btn-get-trade-link" id="getTradeLinkBtn" title="Получить трейд-ссылку">📋</button>
+                    <button class="btn btn-select-all" id="selectAllBtn" title="Выбрать все">✓</button>
+                </div>
+                <div class="accounts-search">
+                    <input type="text" id="accountsSearchInput" class="accounts-search-input" placeholder="Поиск аккаунтов...">
+                </div>
+                <div class="accounts-pagination">
+                    <button class="btn btn-page" id="prevPageBtn" title="Предыдущая">◀</button>
+                    <span class="page-info" id="pageInfo">Стр. 1 / 1</span>
+                    <button class="btn btn-page" id="nextPageBtn" title="Следующая">▶</button>
+                </div>
+                <div class="accounts-list" id="accountsList"></div>
+                <div class="accounts-actions">
+                    <button class="btn btn-add" id="addAccountBtn">
+                        <span class="btn-icon">+</span> Добавить
+                    </button>
+                </div>
+                <div class="accounts-import-actions">
+                    <button class="btn btn-import" id="importAccBtn" title="Импорт из acc.txt">
+                        <span class="btn-icon">📄</span> acc.txt
+                    </button>
+                    <button class="btn btn-import" id="importMaFilesBtn" title="Импорт из папки с maFiles">
+                        <span class="btn-icon">📁</span> Папка maFiles
+                    </button>
+                </div>
+                <div class="selected-count" id="selectedCount">Выбрано: 0</div>
+            </div>
+
+            <!-- Center Panel - Trade Link & Inventory -->
+            <div class="panel center-panel">
+                <div class="trade-link-section">
+                    <h2 class="panel-title">Trade Offer Link</h2>
+                    <input type="text" id="tradeLinkInput" class="trade-link-input" 
+                           placeholder="https://steamcommunity.com/tradeoffer/new/send?...">
+                </div>
+
+                <div class="inventory-section">
+                    <h2 class="panel-title">Инвентарь</h2>
+                    <div class="inventory-selector">
+                        <select id="inventorySelect" class="inventory-select">
+                            <option value="730_2">CS2 (730/2)</option>
+                            <option value="440_2">Team Fortress 2 (440/2)</option>
+                            <option value="753_6">Steam (753/6)</option>
+                        </select>
+                        <select id="currencySelect" class="currency-select">
+                            <option value="5">RUB</option>
+                            <option value="1">USD</option>
+                            <option value="3">EUR</option>
+                            <option value="2">GBP</option>
+                            <option value="18">UAH</option>
+                            <option value="8">JPY</option>
+                            <option value="20">CAD</option>
+                            <option value="21">AUD</option>
+                        </select>
+                        <button class="btn btn-load" id="loadInventoryBtn">
+                            Загрузить
+                        </button>
+                    </div>
+                    <div class="inventory-filters">
+                        <select id="sortOrderSelect" class="sort-order-select">
+                            <option value="price_desc">По цене (убывание)</option>
+                            <option value="price_asc">По цене (возрастание)</option>
+                            <option value="name_asc">По названию (А-Я)</option>
+                            <option value="name_desc">По названию (Я-А)</option>
+                        </select>
+                        <input type="text" id="inventorySearchInput" class="inventory-search-input" placeholder="Поиск предметов...">
+                    </div>
+                    <div class="inventory-content" id="inventoryContent">
+                        <div class="inventory-placeholder">
+                            Выберите аккаунт и нажмите "Загрузить"
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel - Actions -->
+            <div class="panel actions-panel">
+                <h2 class="panel-title">Действия</h2>
+                <div class="action-buttons">
+                    <button class="btn btn-send" id="sendTradeBtn">
+                        <span class="btn-icon">📤</span> Отправить трейд
+                    </button>
+                    <button class="btn btn-trades" id="viewTradesBtn">
+                        <span class="btn-icon">📥</span> Входящие трейды
+                    </button>
+                </div>
+                
+                <div class="status-section">
+                    <h3 class="status-title">Статус</h3>
+                    <div class="status-log" id="statusLog"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal for adding account -->
+        <div class="modal" id="accountModal">
+            <div class="modal-content">
+                <h3>Добавить аккаунт</h3>
+                <form id="accountForm">
+                    <div class="form-group">
+                        <label>Логин</label>
+                        <input type="text" id="accLogin" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Пароль</label>
+                        <input type="password" id="accPassword" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Shared Secret</label>
+                        <input type="text" id="accSharedSecret" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Identity Secret</label>
+                        <input type="text" id="accIdentitySecret" required>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="submit" class="btn btn-add">Добавить</button>
+                        <button type="button" class="btn btn-cancel" id="cancelModalBtn">Отмена</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Modal for trade link -->
+        <div class="modal" id="tradeLinkModal">
+            <div class="modal-content modal-content-small">
+                <h3>Trade Offer Link</h3>
+                <div class="trade-link-result">
+                    <textarea id="tradeLinkResult" class="trade-link-textarea" readonly></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-copy" id="copyTradeLinkBtn">
+                        <span class="btn-icon">📋</span> Копировать
+                    </button>
+                    <button type="button" class="btn btn-cancel" id="closeTradeLinkModalBtn">Закрыть</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal for 2FA code -->
+        <div class="modal" id="2FAModal">
+            <div class="modal-content modal-content-small modal-2fa">
+                <h3>Steam Guard Code</h3>
+                <div class="2fa-code-display">
+                    <div class="2fa-code" id="2FACodeDisplay">------</div>
+                    <div class="2fa-timer" id="2FATimer">30</div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-copy" id="copy2FABtn">
+                        <span class="btn-icon">📋</span> Копировать
+                    </button>
+                    <button type="button" class="btn btn-refresh" id="refresh2FABtn">
+                        <span class="btn-icon">🔄</span> Обновить
+                    </button>
+                    <button type="button" class="btn btn-cancel" id="close2FAModalBtn">Закрыть</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal for incoming trades -->
+        <div class="modal" id="tradesModal">
+            <div class="modal-content modal-content-trades">
+                <h3>Входящие трейды</h3>
+                <div class="trades-header">
+                    <button class="btn btn-refresh" id="refreshTradesBtn">
+                        <span class="btn-icon">🔄</span> Обновить
+                    </button>
+                </div>
+                <div class="trades-content" id="tradesContent">
+                    <div class="inventory-placeholder">Выберите аккаунт и нажмите "Обновить"</div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-cancel" id="closeTradesModalBtn">Закрыть</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="renderer.js"></script>
+</body>
+</html>

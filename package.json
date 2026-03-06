@@ -1,0 +1,41 @@
+{
+  "name": "eclipsetradebot",
+  "version": "1.0.0",
+  "description": "Steam Trade Bot with GUI",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder"
+  },
+  "author": "7VB-STORE",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.13.3"
+  },
+  "dependencies": {
+    "request": "^2.88.2",
+    "steam-community": "^3.45.2",
+    "steam-session": "^1.3.3",
+    "steam-totp": "^2.1.2",
+    "steam-tradeoffer-manager": "^2.12.0",
+    "steam-user": "^4.29.2"
+  },
+  "build": {
+    "appId": "com.eclipsetrade.bot",
+    "productName": "EclipseTradeBot",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "**/*",
+      "!dist/**",
+      "!.git/**",
+      "!node_modules/.cache/**"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "logo/logo.png"
+    }
+  }
+}

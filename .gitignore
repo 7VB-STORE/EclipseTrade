@@ -1,0 +1,51 @@
+# Зависимости
+node_modules/
+package-lock.json
+
+# Конфиденциальные данные
+accounts.json
+prices_cache.json
+*.maFile
+*.key
+*.pem
+.env
+.env.local
+.env.*.local
+
+# Логи
+logs/
+*.log
+
+# Операционные системы
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE и редакторы
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Временные файлы
+*.tmp
+*.bak
+debug_trades.html
+node-installer.msi
+
+# Сборка
+dist/
+build/
+out/
+
+# Electron
+*.asar
+*.unpacked
+
+# Steam сессии
+steam_session_*.json
+*.session
+
+# Кэш
+.cache/
