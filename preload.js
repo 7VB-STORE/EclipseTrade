@@ -14,5 +14,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     generate2FACode: (sharedSecret) => ipcRenderer.invoke('generate-2fa-code', sharedSecret),
     getIncomingTrades: (account) => ipcRenderer.invoke('get-incoming-trades', account),
     acceptTrade: (account, tradeId) => ipcRenderer.invoke('accept-trade', account, tradeId),
-    declineTrade: (account, tradeId) => ipcRenderer.invoke('decline-trade', account, tradeId)
+    declineTrade: (account, tradeId) => ipcRenderer.invoke('decline-trade', account, tradeId),
+    openSteamPage: (account) => ipcRenderer.invoke('open-steam-page', account),
+    getSteamInfo: (accounts) => ipcRenderer.invoke('get-steam-info', accounts)
 });

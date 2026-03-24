@@ -77,7 +77,7 @@ body {
 /* Main Content */
 .main-content {
     display: grid;
-    grid-template-columns: 300px 1fr 300px;
+    grid-template-columns: 340px 1fr 340px;
     gap: 15px;
     flex: 1;
     overflow: hidden;
@@ -104,8 +104,8 @@ body {
 }
 
 .accounts-panel {
-    min-width: 280px;
-    max-width: 350px;
+    min-width: 320px;
+    max-width: 380px;
 }
 
 .accounts-header {
@@ -116,48 +116,72 @@ body {
 }
 
 .accounts-buttons {
-    display: flex;
-    gap: 6px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 5px;
     margin-bottom: 8px;
 }
 
 .accounts-buttons .btn {
-    flex: 1;
-    padding: 4px 8px;
-    font-size: 0.9rem;
+    padding: 8px 5px;
+    font-size: 0.85rem;
+    min-width: 60px;
 }
 
 .btn-get-2fa {
     background: rgba(0, 217, 255, 0.2);
     color: #00d9ff;
     border: 1px solid #00d9ff;
-    border-radius: 4px;
+    border-radius: 6px;
     cursor: pointer;
     transition: all 0.2s;
-    font-size: 0.9rem;
+    font-size: 1rem;
+    min-width: 50px;
 }
 
 .btn-get-2fa:hover {
     background: rgba(0, 217, 255, 0.3);
-    transform: scale(1.02);
+    transform: scale(1.05);
 }
 
 .btn-get-trade-link {
     background: rgba(0, 217, 255, 0.2);
     color: #00d9ff;
     border: 1px solid #00d9ff;
-    border-radius: 4px;
+    border-radius: 6px;
     cursor: pointer;
     transition: all 0.2s;
-    font-size: 0.9rem;
+    font-size: 1rem;
+    min-width: 50px;
 }
 
 .btn-get-trade-link:hover:not(:disabled) {
     background: rgba(0, 217, 255, 0.3);
-    transform: scale(1.02);
+    transform: scale(1.05);
 }
 
 .btn-get-trade-link:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-steam-page {
+    background: rgba(0, 217, 255, 0.2);
+    color: #00d9ff;
+    border: 1px solid #00d9ff;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 1rem;
+    min-width: 50px;
+}
+
+.btn-steam-page:hover:not(:disabled) {
+    background: rgba(0, 217, 255, 0.3);
+    transform: scale(1.05);
+}
+
+.btn-steam-page:disabled {
     opacity: 0.5;
     cursor: not-allowed;
 }
@@ -166,14 +190,16 @@ body {
     background: rgba(0, 217, 255, 0.2);
     color: #00d9ff;
     border: 1px solid #00d9ff;
-    border-radius: 4px;
+    border-radius: 6px;
     cursor: pointer;
     transition: all 0.2s;
-    font-size: 0.9rem;
+    font-size: 1rem;
+    min-width: 50px;
 }
 
 .btn-select-all:hover {
     background: rgba(0, 217, 255, 0.3);
+    transform: scale(1.05);
 }
 
 
@@ -297,6 +323,12 @@ body {
     flex: 1;
 }
 
+.account-item-right {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
 .account-checkbox {
     width: 12px;
     height: 12px;
@@ -305,11 +337,21 @@ body {
 }
 
 .account-login {
+    color: #eee;
     font-weight: 500;
     user-select: none;
     font-size: 0.85rem;
 }
 
+.account-steam-level {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-left: 8px;
+}
 .account-remove {
     background: rgba(255, 71, 87, 0.2);
     border: none;
@@ -836,6 +878,46 @@ body {
     min-width: 500px;
 }
 
+/* Account Info Modal */
+.modal-content-account-info {
+    min-width: 450px;
+}
+
+.account-info-body {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+    padding: 20px;
+    margin: 15px 0;
+}
+
+.account-info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(0, 217, 255, 0.2);
+}
+
+.account-info-row:last-child {
+    border-bottom: none;
+}
+
+.account-info-label {
+    color: #00d9ff;
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.account-info-value {
+    color: #eee;
+    font-family: 'Consolas', monospace;
+    font-size: 0.9rem;
+    max-width: 250px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .trade-link-result {
     margin: 20px 0;
 }
@@ -1119,10 +1201,10 @@ body {
     align-items: center;
     gap: 10px;
     background: rgba(255, 255, 255, 0.05);
-    border: 1px solid #2a2a5a;
+    padding: 10px;
     border-radius: 6px;
-    padding: 8px 10px;
     min-width: 200px;
+    flex: 1;
 }
 
 .trade-item-icon {

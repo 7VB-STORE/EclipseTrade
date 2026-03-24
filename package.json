@@ -14,8 +14,9 @@
     "electron-builder": "^24.13.3"
   },
   "dependencies": {
+    "chromedriver": "^145.0.6",
     "request": "^2.88.2",
-    "steam-community": "^3.45.2",
+    "selenium-webdriver": "^4.41.0",
     "steam-session": "^1.3.3",
     "steam-totp": "^2.1.2",
     "steam-tradeoffer-manager": "^2.12.0",

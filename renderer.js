@@ -41,6 +41,7 @@ const inventorySearchInput = document.getElementById('inventorySearchInput');
 const sortOrderSelect = document.getElementById('sortOrderSelect');
 const get2FABtn = document.getElementById('get2FABtn');
 const getTradeLinkBtn = document.getElementById('getTradeLinkBtn');
+const steamPageBtn = document.getElementById('steamPageBtn');
 const tradeLinkModal = document.getElementById('tradeLinkModal');
 const tradeLinkResult = document.getElementById('tradeLinkResult');
 const copyTradeLinkBtn = document.getElementById('copyTradeLinkBtn');
@@ -66,6 +67,9 @@ async function init() {
         await loadAccounts();
         setupEventListeners();
         log('EclipseTradeBot запущен', 'info');
+        
+        // Автоматическая загрузка уровней Steam
+        await loadSteamLevels();
     } catch (err) {
         log(`Ошибка инициализации: ${err.message}`, 'error');
         console.error('Init error:', err);
@@ -91,16 +95,54 @@ async function loadAccounts() {
     }
 }
 
+// Автоматическая загрузка уровней Steam
+async function loadSteamLevels() {
+    if (!accounts || accounts.length === 0) return;
+    
+    // Находим аккаунты без уровня
+    const accountsToUpdate = accounts.filter(acc => !acc.steamLevel || acc.steamLevel === 0);
+    
+    if (accountsToUpdate.length === 0) {
+        log('Уровни Steam уже загружены', 'info');
+        return;
+    }
+    
+    // Не загружаем уровни если много аккаунтов (чтобы избежать Rate Limit)
+    if (accountsToUpdate.length > 5) {
+        log(`Найдено ${accountsToUpdate.length} аккаунтов без уровня. Загрузка может занять время...`, 'info');
+    }
+    
+    log(`Загрузка уровней Steam для ${accountsToUpdate.length} аккаунт(ов)...`, 'info');
+    
+    try {
+        const result = await window.electronAPI.getSteamInfo(accountsToUpdate);
+        
+        if (result.success) {
+            accounts = result.accounts;
+            renderAccounts();
+            log(`✓ Загружено: ${result.updated} аккаунт(ов)`, 'success');
+        }
+    } catch (err) {
+        log(`Ошибка загрузки информации: ${err.message}`, 'error');
+    }
+}
+
 // Обновление счётчика выбранных
 function updateSelectedCount() {
     if (selectedCountEl) {
         selectedCountEl.textContent = `Выбрано: ${selectedAccounts.size}`;
     }
-    
+
     // Блокируем/разблокируем кнопку получения трейд-ссылки
     if (getTradeLinkBtn) {
         getTradeLinkBtn.disabled = selectedAccounts.size !== 1;
         getTradeLinkBtn.title = selectedAccounts.size === 1 ? 'Получить трейд-ссылку' : 'Выберите один аккаунт';
+    }
+
+    // Блокируем/разблокируем кнопку открытия Steam
+    if (steamPageBtn) {
+        steamPageBtn.disabled = selectedAccounts.size !== 1;
+        steamPageBtn.title = selectedAccounts.size === 1 ? 'Открыть Steam' : 'Выберите один аккаунт';
     }
 }
 
@@ -212,7 +254,18 @@ function renderAccounts() {
             removeAccount(originalIndex);
         });
 
+        // Уровень Steam справа
+        const rightDiv = document.createElement('div');
+        rightDiv.className = 'account-item-right';
+        
+        const steamLevel = account.steamLevel || 0;
+        const levelSpan = document.createElement('span');
+        levelSpan.className = 'account-steam-level';
+        levelSpan.textContent = `Lvl ${steamLevel}`;
+        rightDiv.appendChild(levelSpan);
+
         item.appendChild(leftDiv);
+        item.appendChild(rightDiv);
         item.appendChild(removeBtn);
         accountsList.appendChild(item);
     });
@@ -252,6 +305,21 @@ function toggleAccountSelection(index) {
         log(`Выбран аккаунт: ${accounts[index]?.login || 'неизвестно'}`, 'info');
     } else if (count > 1) {
         log(`Выбрано аккаунтов: ${count}`, 'info');
+    }
+}
+
+// Открытие страницы Steam аккаунта
+async function openSteamPage(index) {
+    const account = accounts[index];
+    if (!account) return;
+
+    try {
+        const result = await window.electronAPI.openSteamPage(account);
+        if (result.success) {
+            log(`Открыта страница Steam для ${account.login}`, 'info');
+        }
+    } catch (err) {
+        log(`Ошибка открытия Steam: ${err.message}`, 'error');
     }
 }
 
@@ -893,6 +961,18 @@ function setupEventListeners() {
         getTradeLinkBtn.addEventListener('click', getTradeLink);
     }
 
+    // Открытие страницы Steam
+    if (steamPageBtn) {
+        steamPageBtn.addEventListener('click', () => {
+            if (selectedAccounts.size !== 1) {
+                log('Выберите один аккаунт для открытия Steam', 'error');
+                return;
+            }
+            const index = Array.from(selectedAccounts)[0];
+            openSteamPage(index);
+        });
+    }
+
     // Копирование трейд-ссылки
     if (copyTradeLinkBtn) {
         copyTradeLinkBtn.addEventListener('click', () => {
@@ -1164,6 +1244,9 @@ function setupEventListeners() {
             }
             if (tradesModal?.classList.contains('active')) {
                 tradesModal.classList.remove('active');
+            }
+            if (accountPage?.classList.contains('active')) {
+                accountPage.classList.remove('active');
             }
         }
     });

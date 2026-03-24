@@ -1486,7 +1486,7 @@ ipcMain.handle('accept-trade', async (event, account, tradeId) => {
 
                         console.log('[accept-trade] Found offer:', offer.id, 'state:', offer.state);
 
-                        // При��������имаем трейд
+                        // При���������������������������������������������������������������имаем трейд
                         offer.accept((err, status) => {
                             if (err) {
                                 console.error('[accept-trade] Accept error:', err.message);
@@ -1735,3 +1735,383 @@ function getOfferStateName(state) {
     };
     return states[state] || 'Unknown';
 }
+
+// Хранилище для ChromeDriver
+let steamDriver = null;
+let currentSteamAccount = null;
+const CHROME_PROFILES_DIR = path.join(app.getPath('temp'), 'eclips-chrome');
+
+// Создание директории профилей
+if (!fs.existsSync(CHROME_PROFILES_DIR)) {
+    fs.mkdirSync(CHROME_PROFILES_DIR, { recursive: true });
+}
+
+// Открытие страницы Steam через ChromeDriver
+ipcMain.handle('open-steam-page', async (event, account) => {
+    const { Builder } = require('selenium-webdriver');
+    const chrome = require('selenium-webdriver/chrome');
+    const chromedriver = require('chromedriver');
+    
+    const chromedriverPath = chromedriver.path;
+    
+    // Закрываем предыдущее окно если есть
+    if (steamDriver) {
+        try { await steamDriver.quit(); } catch (err) {}
+        steamDriver = null;
+    }
+
+    currentSteamAccount = account;
+    
+    // Один профиль для всех аккаунтов (экономия места)
+    const userDataDir = CHROME_PROFILES_DIR;
+    
+    console.log('[ChromeDriver] Starting for', account.login);
+
+    try {
+        const options = new chrome.Options();
+        options.addArguments(`--user-data-dir=${userDataDir}`);
+        options.addArguments('--window-size=1400,900');
+        options.addArguments('--disable-blink-features=AutomationControlled');
+        options.addArguments('--disable-dev-shm-usage');
+        options.addArguments('--no-sandbox');
+        options.addArguments('--disable-gpu');
+        options.addArguments('--disable-extensions');
+        options.addArguments('--disable-background-networking');
+        options.addArguments('--disable-default-apps');
+        options.addArguments('--disable-sync');
+        options.addArguments('--no-first-run');
+        options.excludeSwitches('enable-automation');
+        options.excludeSwitches('enable-logging');
+
+        steamDriver = await new Builder()
+            .forBrowser('chrome')
+            .setChromeOptions(options)
+            .setChromeService(new chrome.ServiceBuilder(chromedriverPath))
+            .build();
+
+        await steamDriver.executeScript('Object.defineProperty(navigator, "webdriver", {get: () => undefined})');
+
+        // Быстрая авторизация
+        console.log('[ChromeDriver] Authenticating...');
+        const authResult = await authenticateSteam(account);
+        const cookies = authResult.cookies;
+        const steamId64 = authResult.steamId;
+        
+        console.log('[ChromeDriver] Got', cookies.length, 'cookies');
+
+        // Переходим сразу на Steam для установки cookies
+        await steamDriver.get('https://steamcommunity.com/');
+        await new Promise(r => setTimeout(r, 1500));
+        
+        // Устанавливаем cookies
+        for (const cookie of cookies) {
+            if (!cookie.name || !cookie.value) continue;
+            try {
+                let domain = cookie.domain || 'steamcommunity.com';
+                domain = domain.replace(/^\./, '');
+                await steamDriver.manage().addCookie({
+                    name: cookie.name,
+                    value: cookie.value,
+                    domain: domain,
+                    path: '/',
+                    secure: true,
+                    httpOnly: true
+                });
+            } catch (e) {}
+        }
+        
+        // Короткая пауза и перезагрузка
+        await new Promise(r => setTimeout(r, 2000));
+        await steamDriver.navigate().refresh();
+        await new Promise(r => setTimeout(r, 3000));
+        
+        // Сразу переходим на профиль
+        const steamUrl = steamId64
+            ? `https://steamcommunity.com/profiles/${steamId64}`
+            : 'https://steamcommunity.com/';
+        
+        console.log('[ChromeDriver] Opening profile:', steamUrl);
+        await steamDriver.get(steamUrl);
+        await new Promise(r => setTimeout(r, 2000));
+        
+        console.log('[ChromeDriver] ✓ Steam page opened');
+
+        return { success: true, steamId: steamId64 };
+
+    } catch (err) {
+        console.error('[ChromeDriver] Error:', err.message);
+        
+        if (steamDriver) {
+            try { await steamDriver.quit(); } catch (quitErr) {}
+            steamDriver = null;
+        }
+        
+        throw new Error(`ChromeDriver error: ${err.message}`);
+    }
+});
+
+// Авторизация в Steam через steam-session
+async function authenticateSteam(account) {
+    return new Promise((resolve, reject) => {
+        const { LoginSession, EAuthTokenPlatformType } = require('steam-session');
+        const SteamTotp = require('steam-totp');
+
+        const session = new LoginSession(EAuthTokenPlatformType.WebBrowser);
+
+        let timeout = setTimeout(() => {
+            session.cancelLoginAttempt();
+            reject(new Error('Таймаут аутентификации (60 сек)'));
+        }, 60000);
+
+        session.on('authenticated', async (details) => {
+            clearTimeout(timeout);
+            console.log('[Steam Auth] ✓ Authenticated!');
+            console.log('[Steam Auth] SteamID:', session.steamID);
+
+            try {
+                // Получаем web cookies из сессии (возвращает строки)
+                const cookieStrings = await session.getWebCookies();
+                console.log('[Steam Auth] Web cookies received:', cookieStrings.length);
+
+                // Парсим строки cookies в объекты
+                const parsedCookies = cookieStrings.map(parseCookieString);
+                console.log('[Steam Auth] Parsed cookies:', parsedCookies.length);
+
+                session.cancelLoginAttempt();
+                resolve({
+                    cookies: parsedCookies,
+                    steamId: session.steamID ? session.steamID.toString() : null
+                });
+            } catch (err) {
+                console.error('[Steam Auth] Cookie error:', err);
+                session.cancelLoginAttempt();
+                resolve({ cookies: null, steamId: null });
+            }
+        });
+
+        session.on('error', (err) => {
+            console.error('[Steam Auth] Error:', err);
+            clearTimeout(timeout);
+            session.cancelLoginAttempt();
+            reject(err);
+        });
+
+        // Начинаем аутентификацию
+        session.startWithCredentials({
+            accountName: account.login,
+            password: account.password
+        }).then((result) => {
+            if (result.actionRequired) {
+                console.log('[Steam Auth] Action required:', result.validActions);
+
+                // Если требуется 2FA и есть sharedSecret
+                if (account.sharedSecret) {
+                    try {
+                        const sharedSecret = Buffer.from(account.sharedSecret, 'base64');
+                        const code = SteamTotp.getAuthCode(sharedSecret);
+                        console.log('[Steam Auth] Submitting 2FA code:', code);
+
+                        session.submitSteamGuardCode(code).catch((err) => {
+                            console.error('[Steam Auth] 2FA error:', err.message);
+                        });
+                    } catch (e) {
+                        console.error('[Steam Auth] 2FA generation error:', e);
+                    }
+                }
+            }
+        }).catch((err) => {
+            clearTimeout(timeout);
+            console.error('[Steam Auth] startWithCredentials error:', err);
+            reject(err);
+        });
+    });
+}
+
+// Парсинг строки cookie в объект
+function parseCookieString(cookieStr) {
+    const parts = cookieStr.split(';').map(p => p.trim());
+    const cookie = {};
+    
+    // Первая часть - name=value
+    const [nameValue] = parts;
+    const [name, ...valueParts] = nameValue.split('=');
+    cookie.name = name;
+    cookie.value = valueParts.join('=');
+    
+    // Остальные части - атрибуты
+    for (let i = 1; i < parts.length; i++) {
+        const part = parts[i];
+        const [attrName, attrValue] = part.split('=');
+        const attr = attrName.toLowerCase();
+        
+        if (attr === 'expires') {
+            const date = new Date(attrValue);
+            cookie.expires = Math.floor(date.getTime() / 1000);
+        } else if (attr === 'max-age') {
+            cookie.maxAge = parseInt(attrValue);
+        } else if (attr === 'path') {
+            cookie.path = attrValue;
+        } else if (attr === 'domain') {
+            cookie.domain = attrValue;
+        } else if (attr === 'secure') {
+            cookie.secure = true;
+        } else if (attr === 'httponly') {
+            cookie.httpOnly = true;
+        } else if (attr === 'samesite') {
+            cookie.sameSite = attrValue;
+        }
+    }
+    
+    return cookie;
+}
+
+// Установка cookies в сессию Electron
+async function setSteamCookies(cookies, accountLogin) {
+    const session = require('electron').session.fromPartition('persist:steam-' + accountLogin);
+
+    // Очищаем старые cookies
+    await session.clearStorageData();
+
+    console.log('[Steam Cookies] Setting', cookies.length, 'cookies...');
+
+    // Устанавливаем новые cookies
+    for (const cookie of cookies) {
+        try {
+            // Проверяем что cookie имеет правильную структуру
+            if (!cookie.name || !cookie.value) {
+                console.log('[Steam Cookies] Skipping invalid cookie:', cookie);
+                continue;
+            }
+
+            // Определяем домен
+            let domain = cookie.domain;
+            if (!domain) {
+                domain = 'steamcommunity.com';
+            }
+            // Удаляем ведущую точку если есть
+            if (domain.startsWith('.')) {
+                domain = domain.substring(1);
+            }
+
+            // Формируем URL
+            const protocol = cookie.secure ? 'https' : 'http';
+            const url = `${protocol}://${domain}`;
+
+            await session.cookies.set({
+                url: url,
+                name: cookie.name,
+                value: cookie.value,
+                expirationDate: cookie.expires || undefined,
+                path: cookie.path || '/',
+                secure: cookie.secure !== undefined ? cookie.secure : true,
+                httpOnly: cookie.httpOnly !== undefined ? cookie.httpOnly : true,
+                domain: domain
+            });
+
+            console.log(`[Steam Cookies] ✓ Set: ${cookie.name} (${domain})`);
+        } catch (err) {
+            console.error(`[Steam Cookies] Failed to set ${cookie.name}:`, err.message);
+        }
+    }
+
+    console.log('[Steam Cookies] ✓ Done for', accountLogin);
+}
+
+// Получение данных аккаунта для страницы
+ipcMain.on('get-account-data', (event) => {
+    if (currentSteamAccount) {
+        event.reply('account-data', currentSteamAccount);
+    } else {
+        event.reply('account-data', null);
+    }
+});
+
+// Получение информации Steam (уровень и CS:GO звание через парсинг профиля)
+ipcMain.handle('get-steam-info', async (event, accounts) => {
+    console.log('[Steam Info] Getting info for', accounts.length, 'accounts');
+
+    let updated = 0;
+    let errors = 0;
+
+    for (const account of accounts) {
+        try {
+            // Авторизуемся для получения cookies и SteamID
+            console.log('[Steam Info] Authenticating', account.login, '...');
+            const authResult = await authenticateSteam(account);
+            const cookies = authResult.cookies;
+            const steamId64 = authResult.steamId;
+
+            if (!steamId64) {
+                console.log('[Steam Info] No SteamID for', account.login);
+                errors++;
+                continue;
+            }
+
+            console.log('[Steam Info] SteamID for', account.login, ':', steamId64);
+
+            // Получаем уровень Steam через парсинг страницы профиля
+            let steamLevel = 0;
+            try {
+                const cookieHeader = cookies.map(c => `${c.name}=${c.value}`).join('; ');
+                const profileUrl = `https://steamcommunity.com/profiles/${steamId64}/`;
+                console.log('[Steam Info] Loading profile:', profileUrl);
+                
+                const response = await new Promise((resolve, reject) => {
+                    request.get({
+                        url: profileUrl,
+                        headers: {
+                            'Cookie': cookieHeader,
+                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                        },
+                        timeout: 10000
+                    }, (err, res, body) => {
+                        if (err) reject(err);
+                        else resolve({ res, body });
+                    });
+                });
+
+                console.log('[Steam Info] Profile response:', response.res.statusCode);
+
+                if (response.res.statusCode === 200) {
+                    // Парсим уровень из HTML
+                    const levelMatch = response.body.match(/friendPlayerLevelNum[^>]*>(\d+)</);
+                    if (levelMatch) {
+                        steamLevel = parseInt(levelMatch[1]);
+                        console.log('[Steam Info] Level:', steamLevel);
+                    }
+                }
+            } catch (err) {
+                console.log('[Steam Info] Level error for', account.login, ':', err.message);
+            }
+
+            // Обновляем аккаунт
+            account.steamLevel = steamLevel;
+            updated++;
+
+            console.log('[Steam Info] Updated', account.login, '- Level:', steamLevel);
+
+            // Увеличенная задержка между запросами для избежания Rate Limit
+            await new Promise(r => setTimeout(r, 5000));
+
+        } catch (err) {
+            console.error('[Steam Info] Error for', account.login, ':', err.message);
+            errors++;
+
+            // При ошибке 429 ждём дольше
+            if (err.message.includes('429')) {
+                console.log('[Steam Info] Rate limit hit, waiting 60 seconds...');
+                await new Promise(r => setTimeout(r, 60000));
+            }
+        }
+    }
+
+    // Сохраняем обновлённые аккаунты
+    saveAccounts(accounts);
+
+    return {
+        success: true,
+        accounts: accounts,
+        updated: updated,
+        errors: errors
+    };
+});
