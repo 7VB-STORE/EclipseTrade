@@ -5,6 +5,7 @@
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Node.js](https://img.shields.io/badge/node-%3E%3D16.0.0-green.svg)
 ![Electron](https://img.shields.io/badge/electron-latest-blue.svg)
+<a href="https://ibb.co/HL3Xthvt"><img src="https://i.ibb.co/kVvM4mn4/image.jpg" alt="image" border="0"></a>
 
 ## ✨ Возможности
 
